@@ -548,7 +548,7 @@ class PatchUnEmbed(nn.Module):
         self.in_chans = in_chans
         self.embed_dim = embed_dim
 
-    def forward(self, x: torch.Tensor, x_size.torch.Size) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, x_size: torch.Size) -> torch.Tensor:
         B, HW, C = x.shape
         x = x.transpose(1, 2).view(B, self.embed_dim, x_size[0], x_size[1])  # B Ph*Pw C
         return x
