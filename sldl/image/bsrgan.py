@@ -8,8 +8,10 @@ import torch.nn.init as init
 import numpy as np
 from PIL import Image
 
+from typing import Callable, List, Union
 
-def initialize_weights(net_l, scale=1):
+
+def initialize_weights(net_l: Union[nn.Module, List[nn.Module]], scale: int = 1) -> None:
     if not isinstance(net_l, list):
         net_l = [net_l]
     for net in net_l:
@@ -29,7 +31,7 @@ def initialize_weights(net_l, scale=1):
                 init.constant_(m.bias.data, 0.0)
 
 
-def make_layer(block, n_layers):
+def make_layer(block: Callable[[], nn.Module], n_layers: int) -> nn.Sequential:
     layers = []
     for _ in range(n_layers):
         layers.append(block())
@@ -37,7 +39,7 @@ def make_layer(block, n_layers):
 
 
 class ResidualDenseBlock_5C(nn.Module):
-    def __init__(self, nf=64, gc=32, bias=True):
+    def __init__(self, nf: int = 64, gc: int = 32, bias: bool = True):
         super(ResidualDenseBlock_5C, self).__init__()
         # gc: growth channel, i.e. intermediate channels
         self.conv1 = nn.Conv2d(nf, gc, 3, 1, 1, bias=bias)
@@ -50,7 +52,7 @@ class ResidualDenseBlock_5C(nn.Module):
         # initialization
         initialize_weights([self.conv1, self.conv2, self.conv3, self.conv4, self.conv5], 0.1)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x1 = self.lrelu(self.conv1(x))
         x2 = self.lrelu(self.conv2(torch.cat((x, x1), 1)))
         x3 = self.lrelu(self.conv3(torch.cat((x, x1, x2), 1)))
@@ -62,13 +64,13 @@ class ResidualDenseBlock_5C(nn.Module):
 class RRDB(nn.Module):
     '''Residual in Residual Dense Block'''
 
-    def __init__(self, nf, gc=32):
+    def __init__(self, nf, gc: int = 32):
         super(RRDB, self).__init__()
         self.RDB1 = ResidualDenseBlock_5C(nf, gc)
         self.RDB2 = ResidualDenseBlock_5C(nf, gc)
         self.RDB3 = ResidualDenseBlock_5C(nf, gc)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.RDB1(x)
         out = self.RDB2(out)
         out = self.RDB3(out)
@@ -76,11 +78,10 @@ class RRDB(nn.Module):
 
 
 class RRDBNet(nn.Module):
-    def __init__(self, in_nc=3, out_nc=3, nf=64, nb=23, gc=32, sf=4):
+    def __init__(self, in_nc: int = 3, out_nc: int = 3, nf: int = 64, nb: int = 23, gc: int = 32, sf: int = 4):
         super(RRDBNet, self).__init__()
         RRDB_block_f = functools.partial(RRDB, nf=nf, gc=gc)
         self.sf = sf
-        # print([in_nc, out_nc, nf, nb, gc, sf])
 
         self.conv_first = nn.Conv2d(in_nc, nf, 3, 1, 1, bias=True)
         self.RRDB_trunk = make_layer(RRDB_block_f, nb)
@@ -94,7 +95,7 @@ class RRDBNet(nn.Module):
 
         self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         fea = self.conv_first(x)
         trunk = self.trunk_conv(self.RRDB_trunk(fea))
         fea = fea + trunk
@@ -108,7 +109,7 @@ class RRDBNet(nn.Module):
 
 
 @torch.no_grad()
-def bsrgan_inference(model, img, device='cpu', precision='full'):
+def bsrgan_inference(model: RRDBNet, img: Image, device: torch.device = torch.device('cpu'), precision: str = 'full') -> Image:
     model.eval()
     img = torch.from_numpy(np.ascontiguousarray(np.asarray(img))).permute(2, 0, 1).float().div(255.).unsqueeze(0)
     img = img.to(device)

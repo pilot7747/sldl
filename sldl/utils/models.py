@@ -16,7 +16,7 @@ def get_data_dir(data_dir: Optional[AnyStr] = None) -> AnyStr:
     return data_dir
 
 
-def get_checkpoint_path(url):
+def get_checkpoint_path(url: str) -> str:
     name = url.split('/')[-1]
     data_root = get_data_dir()
     full_data_path = join(data_root, name)

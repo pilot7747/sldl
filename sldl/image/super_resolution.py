@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from PIL import Image
 
 from .swinir import SwinIR, swin_ir_inference
 from .bsrgan import RRDBNet, bsrgan_inference
@@ -8,7 +9,7 @@ from sldl.utils import get_checkpoint_path
 
 
 class ImageSR(nn.Module):
-    def __init__(self, model_name='SwinIR-M', precision='full'):
+    def __init__(self, model_name: str = 'SwinIR-M', precision: str = 'full'):
         super(ImageSR, self).__init__()
         self.model_name = model_name
         self.precision = precision
@@ -36,10 +37,10 @@ class ImageSR(nn.Module):
             self.model = self.model.half()
             
     @property
-    def device(self):
+    def device(self) -> torch.device:
         return next(self.parameters()).device
             
-    def __call__(self, img):
+    def __call__(self, img: Image) -> Image:
         if self.model_name in ['SwinIR-M', 'SwinIR-L']:
             return swin_ir_inference(self.model, img, device=self.device, precision=self.precision)
         elif self.model_name in ['BSRGAN', 'BSRGANx2']:

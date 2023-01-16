@@ -1,12 +1,13 @@
 import torch
 from torch import nn
 from .swinir import SwinIR, swin_ir_inference
+from PIL import Image
 
 from sldl.utils import get_checkpoint_path
 
 
 class ImageDenoising(nn.Module):
-    def __init__(self, model_name='SwinIR', noise=15):
+    def __init__(self, model_name: str = 'SwinIR', noise: int = 15):
         super(ImageDenoising, self).__init__()
         self.model_name = model_name
         if model_name == 'SwinIR':
@@ -18,8 +19,8 @@ class ImageDenoising(nn.Module):
             self.model.load_state_dict(pretrained_model['params'] if 'params' in pretrained_model.keys() else pretrained_model, strict=True)
     
     @property
-    def device(self):
+    def device(self) -> torch.device:
         return next(self.parameters()).device
     
-    def __call__(self, img):
+    def __call__(self, img: Image) -> Image:
         return swin_ir_inference(self.model, img, device=self.device)

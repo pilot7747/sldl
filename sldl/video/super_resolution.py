@@ -4,6 +4,7 @@ import torch
 from torch import nn
 from PIL import Image
 from tqdm.auto import tqdm
+from typing import Optional, Tuple
 
 from .vrt import VRT
 
@@ -136,7 +137,7 @@ class VideoSR(nn.Module):
             yield self.model(frame)
         # return [self.model(frame) for frame in tqdm(frames)]
     
-    def __call__(self, path, dest, pre_resolution=None):
+    def __call__(self, path: str, dest: str, pre_resolution: Optional[Tuple[int, int]] = None) -> None:
         fps = get_fps(path)
         if self.model_name == 'vrt':
             out_frames = self.apply_vrt(path)

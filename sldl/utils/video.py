@@ -4,9 +4,10 @@ import sys
 from tqdm.auto import tqdm
 from PIL import Image
 import numpy as np
+from typing import Iterable, Optional, Tuple
 
 
-def get_video_frames(path, resolution=None):
+def get_video_frames(path: str, resolution: Optional[Tuple[int, int]] = None) -> List[Image]:
     cam = cv2.VideoCapture(path)
     currentframe = 0
     frames = []
@@ -25,7 +26,7 @@ def get_video_frames(path, resolution=None):
     return frames
 
 
-def frames_to_video(frames, path, fps):
+def frames_to_video(frames: Iterable[Image], path: str, fps: float) -> None:
         first_frame = next(frames)
         width, height = first_frame.size
         fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
@@ -38,7 +39,7 @@ def frames_to_video(frames, path, fps):
         video.release()
 
 
-def get_fps(path):
+def get_fps(path: str) -> float:
         vidcap = cv2.VideoCapture(path)
         fps = vidcap.get(cv2.CAP_PROP_FPS)
         vidcap.release()

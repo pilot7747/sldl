@@ -6,10 +6,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
+from typing import List, Optional, Set
 
 
 class Mlp(nn.Module):
-    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
+    def __init__(self, in_features: int, hidden_features: Optional[int] = None, out_features: Optional[int] = None, act_layer: nn.Module = nn.GELU, drop: float = 0.):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
@@ -18,7 +19,7 @@ class Mlp(nn.Module):
         self.fc2 = nn.Linear(hidden_features, out_features)
         self.drop = nn.Dropout(drop)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.fc1(x)
         x = self.act(x)
         x = self.drop(x)
@@ -27,7 +28,7 @@ class Mlp(nn.Module):
         return x
 
 
-def window_partition(x, window_size):
+def window_partition(x: torch.Tensor, window_size: int) -> torch.Tensor:
     """
     Args:
         x: (B, H, W, C)
@@ -41,7 +42,7 @@ def window_partition(x, window_size):
     return windows
 
 
-def window_reverse(windows, window_size, H, W):
+def window_reverse(windows: torch.Tensor, window_size: int, H: int, W: int) -> torch.Tensor:
     """
     Args:
         windows: (num_windows*B, window_size, window_size, C)
@@ -70,7 +71,7 @@ class WindowAttention(nn.Module):
         proj_drop (float, optional): Dropout ratio of output. Default: 0.0
     """
 
-    def __init__(self, dim, window_size, num_heads, qkv_bias=True, qk_scale=None, attn_drop=0., proj_drop=0.):
+    def __init__(self, dim: int, window_size: int, num_heads: int, qkv_bias: bool = True, qk_scale: Optional[float] = None, attn_drop: float = 0., proj_drop: float = 0.):
 
         super().__init__()
         self.dim = dim
@@ -105,7 +106,7 @@ class WindowAttention(nn.Module):
         trunc_normal_(self.relative_position_bias_table, std=.02)
         self.softmax = nn.Softmax(dim=-1)
 
-    def forward(self, x, mask=None):
+    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         Args:
             x: input features with shape of (num_windows*B, N, C)
@@ -141,7 +142,7 @@ class WindowAttention(nn.Module):
     def extra_repr(self) -> str:
         return f'dim={self.dim}, window_size={self.window_size}, num_heads={self.num_heads}'
 
-    def flops(self, N):
+    def flops(self, N: int) -> int:
         # calculate flops for 1 window with token length of N
         flops = 0
         # qkv = self.qkv(x)
@@ -173,9 +174,9 @@ class SwinTransformerBlock(nn.Module):
         norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
     """
 
-    def __init__(self, dim, input_resolution, num_heads, window_size=7, shift_size=0,
-                 mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0., drop_path=0.,
-                 act_layer=nn.GELU, norm_layer=nn.LayerNorm):
+    def __init__(self, dim: int, input_resolution: torch.Size, num_heads: int, window_size: int = 7, shift_size: int = 0,
+                 mlp_ratio: float = 4., qkv_bias: bool = True, qk_scale: Optional[float] = None, drop: float = 0., attn_drop: float = 0., drop_path: float = 0.,
+                 act_layer: nn.Module = nn.GELU, norm_layer: nn.Module = nn.LayerNorm):
         super().__init__()
         self.dim = dim
         self.input_resolution = input_resolution
@@ -206,7 +207,7 @@ class SwinTransformerBlock(nn.Module):
 
         self.register_buffer("attn_mask", attn_mask)
 
-    def calculate_mask(self, x_size):
+    def calculate_mask(self, x_size: torch.Size) -> torch.Tensor:
         # calculate attention mask for SW-MSA
         H, W = x_size
         img_mask = torch.zeros((1, H, W, 1))  # 1 H W 1
@@ -229,7 +230,7 @@ class SwinTransformerBlock(nn.Module):
 
         return attn_mask
 
-    def forward(self, x, x_size):
+    def forward(self, x: torch.Tensor, x_size: torch.Size) -> torch.Tensor:
         H, W = x_size
         B, L, C = x.shape
         # assert L == H * W, "input feature has wrong size"
@@ -275,7 +276,7 @@ class SwinTransformerBlock(nn.Module):
         return f"dim={self.dim}, input_resolution={self.input_resolution}, num_heads={self.num_heads}, " \
                f"window_size={self.window_size}, shift_size={self.shift_size}, mlp_ratio={self.mlp_ratio}"
 
-    def flops(self):
+    def flops(self) -> int:
         flops = 0
         H, W = self.input_resolution
         # norm1
@@ -298,14 +299,14 @@ class PatchMerging(nn.Module):
         norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
     """
 
-    def __init__(self, input_resolution, dim, norm_layer=nn.LayerNorm):
+    def __init__(self, input_resolution: torch.Size, dim: int, norm_layer: nn.Module = nn.LayerNorm):
         super().__init__()
         self.input_resolution = input_resolution
         self.dim = dim
         self.reduction = nn.Linear(4 * dim, 2 * dim, bias=False)
         self.norm = norm_layer(4 * dim)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         x: B, H*W, C
         """
@@ -331,7 +332,7 @@ class PatchMerging(nn.Module):
     def extra_repr(self) -> str:
         return f"input_resolution={self.input_resolution}, dim={self.dim}"
 
-    def flops(self):
+    def flops(self) -> int:
         H, W = self.input_resolution
         flops = H * W * self.dim
         flops += (H // 2) * (W // 2) * 4 * self.dim * 2 * self.dim
@@ -385,7 +386,7 @@ class BasicLayer(nn.Module):
         else:
             self.downsample = None
 
-    def forward(self, x, x_size):
+    def forward(self, x: torch.Tensor, x_size: torch.Size) -> torch.Tensor:
         for blk in self.blocks:
             if self.use_checkpoint:
                 x = checkpoint.checkpoint(blk, x, x_size)
@@ -398,7 +399,7 @@ class BasicLayer(nn.Module):
     def extra_repr(self) -> str:
         return f"dim={self.dim}, input_resolution={self.input_resolution}, depth={self.depth}"
 
-    def flops(self):
+    def flops(self) -> int:
         flops = 0
         for blk in self.blocks:
             flops += blk.flops()
@@ -429,10 +430,10 @@ class RSTB(nn.Module):
         resi_connection: The convolutional block before residual connection.
     """
 
-    def __init__(self, dim, input_resolution, depth, num_heads, window_size,
-                 mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0.,
-                 drop_path=0., norm_layer=nn.LayerNorm, downsample=None, use_checkpoint=False,
-                 img_size=224, patch_size=4, resi_connection='1conv'):
+    def __init__(self, dim, input_resolution: torch.Size, depth: int, num_heads: int, window_size: int,
+                 mlp_ratio: float = 4., qkv_bias: bool = True, qk_scale: Optional[float] = None, drop: float = 0., attn_drop: float = 0.,
+                 drop_path: float = 0., norm_layer: nn.Module = nn.LayerNorm, downsample: Optional[nn.Module] = None, use_checkpoint: bool = False,
+                 img_size: int = 224, patch_size: int = 4, resi_connection: str = '1conv'):
         super(RSTB, self).__init__()
 
         self.dim = dim
@@ -468,10 +469,10 @@ class RSTB(nn.Module):
             img_size=img_size, patch_size=patch_size, in_chans=0, embed_dim=dim,
             norm_layer=None)
 
-    def forward(self, x, x_size):
+    def forward(self, x: torch.Tensor, x_size: torch.Size) -> torch.Tensor:
         return self.patch_embed(self.conv(self.patch_unembed(self.residual_group(x, x_size), x_size))) + x
 
-    def flops(self):
+    def flops(self) -> float:
         flops = 0
         flops += self.residual_group.flops()
         H, W = self.input_resolution
@@ -492,7 +493,7 @@ class PatchEmbed(nn.Module):
         norm_layer (nn.Module, optional): Normalization layer. Default: None
     """
 
-    def __init__(self, img_size=224, patch_size=4, in_chans=3, embed_dim=96, norm_layer=None):
+    def __init__(self, img_size: int = 224, patch_size: int = 4, in_chans: int = 3, embed_dim: int = 96, norm_layer: Optional[nn.Module] = None):
         super().__init__()
         img_size = to_2tuple(img_size)
         patch_size = to_2tuple(patch_size)
@@ -510,13 +511,13 @@ class PatchEmbed(nn.Module):
         else:
             self.norm = None
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x.flatten(2).transpose(1, 2)  # B Ph*Pw C
         if self.norm is not None:
             x = self.norm(x)
         return x
 
-    def flops(self):
+    def flops(self) -> int:
         flops = 0
         H, W = self.img_size
         if self.norm is not None:
@@ -534,7 +535,7 @@ class PatchUnEmbed(nn.Module):
         norm_layer (nn.Module, optional): Normalization layer. Default: None
     """
 
-    def __init__(self, img_size=224, patch_size=4, in_chans=3, embed_dim=96, norm_layer=None):
+    def __init__(self, img_size: int = 224, patch_size: int = 4, in_chans: int = 3, embed_dim: int = 96, norm_layer: Optional[nn.Module] = None):
         super().__init__()
         img_size = to_2tuple(img_size)
         patch_size = to_2tuple(patch_size)
@@ -547,12 +548,12 @@ class PatchUnEmbed(nn.Module):
         self.in_chans = in_chans
         self.embed_dim = embed_dim
 
-    def forward(self, x, x_size):
+    def forward(self, x: torch.Tensor, x_size.torch.Size) -> torch.Tensor:
         B, HW, C = x.shape
         x = x.transpose(1, 2).view(B, self.embed_dim, x_size[0], x_size[1])  # B Ph*Pw C
         return x
 
-    def flops(self):
+    def flops(self) -> int:
         flops = 0
         return flops
 
@@ -564,7 +565,7 @@ class Upsample(nn.Sequential):
         num_feat (int): Channel number of intermediate features.
     """
 
-    def __init__(self, scale, num_feat):
+    def __init__(self, scale: int, num_feat: int):
         m = []
         if (scale & (scale - 1)) == 0:  # scale = 2^n
             for _ in range(int(math.log(scale, 2))):
@@ -586,7 +587,7 @@ class UpsampleOneStep(nn.Sequential):
         num_feat (int): Channel number of intermediate features.
     """
 
-    def __init__(self, scale, num_feat, num_out_ch, input_resolution=None):
+    def __init__(self, scale: int, num_feat: int, num_out_ch: int, input_resolution: Optional[torch.Size] = None):
         self.num_feat = num_feat
         self.input_resolution = input_resolution
         m = []
@@ -594,7 +595,7 @@ class UpsampleOneStep(nn.Sequential):
         m.append(nn.PixelShuffle(scale))
         super(UpsampleOneStep, self).__init__(*m)
 
-    def flops(self):
+    def flops(self) -> int:
         H, W = self.input_resolution
         flops = H * W * self.num_feat * 3 * 9
         return flops
@@ -627,12 +628,12 @@ class SwinIR(nn.Module):
         resi_connection: The convolutional block before residual connection. '1conv'/'3conv'
     """
 
-    def __init__(self, img_size=64, patch_size=1, in_chans=3,
-                 embed_dim=96, depths=[6, 6, 6, 6], num_heads=[6, 6, 6, 6],
-                 window_size=7, mlp_ratio=4., qkv_bias=True, qk_scale=None,
-                 drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1,
-                 norm_layer=nn.LayerNorm, ape=False, patch_norm=True,
-                 use_checkpoint=False, upscale=2, img_range=1., upsampler='', resi_connection='1conv',
+    def __init__(self, img_size: int = 64, patch_size: int = 1, in_chans: int = 3,
+                 embed_dim: int = 96, depths: List[int] = [6, 6, 6, 6], num_heads: List[int] = [6, 6, 6, 6],
+                 window_size: int = 7, mlp_ratio: float = 4., qkv_bias: bool = True, qk_scale: Optional[float] = None,
+                 drop_rate: float = 0., attn_drop_rate: float = 0., drop_path_rate: float = 0.1,
+                 norm_layer: nn.Module = nn.LayerNorm, ape: bool = False, patch_norm: bool = True,
+                 use_checkpoint: bool = False, upscale: int = 2, img_range: float = 1., upsampler: str = '', resi_connection: str = '1conv',
                  **kwargs):
         super(SwinIR, self).__init__()
         num_in_ch = in_chans
@@ -747,7 +748,7 @@ class SwinIR(nn.Module):
 
         self.apply(self._init_weights)
 
-    def _init_weights(self, m):
+    def _init_weights(self, m: torch.Tensor) -> None:
         if isinstance(m, nn.Linear):
             trunc_normal_(m.weight, std=.02)
             if isinstance(m, nn.Linear) and m.bias is not None:
@@ -757,21 +758,21 @@ class SwinIR(nn.Module):
             nn.init.constant_(m.weight, 1.0)
 
     @torch.jit.ignore
-    def no_weight_decay(self):
+    def no_weight_decay(self) -> Set[str]:
         return {'absolute_pos_embed'}
 
     @torch.jit.ignore
-    def no_weight_decay_keywords(self):
+    def no_weight_decay_keywords(self) -> Set[str]:
         return {'relative_position_bias_table'}
 
-    def check_image_size(self, x):
+    def check_image_size(self, x: torch.Tensor) -> torch.Tensor:
         _, _, h, w = x.size()
         mod_pad_h = (self.window_size - h % self.window_size) % self.window_size
         mod_pad_w = (self.window_size - w % self.window_size) % self.window_size
         x = F.pad(x, (0, mod_pad_w, 0, mod_pad_h), 'reflect')
         return x
 
-    def forward_features(self, x):
+    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
         x_size = (x.shape[2], x.shape[3])
         x = self.patch_embed(x)
         if self.ape:
@@ -786,7 +787,7 @@ class SwinIR(nn.Module):
 
         return x
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         H, W = x.shape[2:]
         x = self.check_image_size(x)
         
@@ -823,7 +824,7 @@ class SwinIR(nn.Module):
 
         return x[:, :, :H*self.upscale, :W*self.upscale]
 
-    def flops(self):
+    def flops(self) -> int:
         flops = 0
         H, W = self.patches_resolution
         flops += H * W * 3 * self.embed_dim * 9
@@ -836,7 +837,7 @@ class SwinIR(nn.Module):
 
 
 @torch.no_grad()
-def swin_ir_inference(model, img, window_size=8, device='cpu'):
+def swin_ir_inference(model: SwinIR, img: Image, window_size: int = 8, device: torch.device = torch.device('cpu')) -> Image:
     img_lq = np.asarray(img).astype(np.float32) / 255.
     img_lq = np.transpose(img_lq if img_lq.shape[2] == 1 else img_lq[:, :, [2, 1, 0]], (2, 0, 1))
     img_lq = torch.from_numpy(img_lq).float().unsqueeze(0).to(device)
