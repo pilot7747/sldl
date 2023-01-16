@@ -108,11 +108,14 @@ class RRDBNet(nn.Module):
 
 
 @torch.no_grad()
-def bsrgan_inference(model, img, device='cpu'):
+def bsrgan_inference(model, img, device='cpu', precision='full'):
     model.eval()
     img = torch.from_numpy(np.ascontiguousarray(np.asarray(img))).permute(2, 0, 1).float().div(255.).unsqueeze(0)
     img = img.to(device)
-    img = model(img)
+    if precision == 'full':
+        img = model(img)
+    else:
+        img = model(img.half())
     img = img.data.squeeze().float().clamp_(0, 1).cpu().numpy()
     if img.ndim == 3:
         img = np.transpose(img, (1, 2, 0))

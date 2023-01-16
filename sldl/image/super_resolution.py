@@ -8,9 +8,10 @@ from sldl.utils import get_checkpoint_path
 
 
 class ImageSR(nn.Module):
-    def __init__(self, model_name='SwinIR-M'):
+    def __init__(self, model_name='SwinIR-M', precision='full'):
         super(ImageSR, self).__init__()
         self.model_name = model_name
+        self.precision = precision
         if model_name in ['SwinIR-M', 'SwinIR-L']:
             if model_name == 'SwinIR-M':
                 self.model = SwinIR(upscale=4, in_chans=3, img_size=64, window_size=8,
@@ -30,6 +31,9 @@ class ImageSR(nn.Module):
             self.model = RRDBNet(in_nc=3, out_nc=3, nf=64, nb=23, gc=32, sf=2 if model_name == 'BSRGANx2' else 4)
             path = get_checkpoint_path(f'https://github.com/cszn/KAIR/releases/download/v1.0/{model_name}.pth')
             self.model.load_state_dict(torch.load(path), strict=True)
+        
+        if precision == 'half':
+            self.model = self.model.half()
             
     @property
     def device(self):
@@ -37,6 +41,6 @@ class ImageSR(nn.Module):
             
     def __call__(self, img):
         if self.model_name in ['SwinIR-M', 'SwinIR-L']:
-            return swin_ir_inference(self.model, img, device=self.device)
+            return swin_ir_inference(self.model, img, device=self.device, precision=self.precision)
         elif self.model_name in ['BSRGAN', 'BSRGANx2']:
-            return bsrgan_inference(self.model, img, device=self.device)
+            return bsrgan_inference(self.model, img, device=self.device, precision=self.precision)

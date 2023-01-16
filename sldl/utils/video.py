@@ -6,7 +6,7 @@ from PIL import Image
 import numpy as np
 
 
-def get_video_frames(path):
+def get_video_frames(path, resolution=None):
     cam = cv2.VideoCapture(path)
     currentframe = 0
     frames = []
@@ -14,7 +14,10 @@ def get_video_frames(path):
         ret, frame = cam.read()
 
         if ret:
-            frames.append(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_RGBA2BGRA)).convert('RGB'))
+            if resolution is None:
+                frames.append(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_RGBA2BGRA)).convert('RGB'))
+            else:
+                frames.append(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_RGBA2BGRA)).convert('RGB').resize(resolution))
             currentframe += 1
         else:
             break
@@ -23,15 +26,17 @@ def get_video_frames(path):
 
 
 def frames_to_video(frames, path, fps):
-        width, height = frames[0].size
+        first_frame = next(frames)
+        width, height = first_frame.size
         fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
         video = cv2.VideoWriter(path,  fourcc, fps, (width, height))
+        video.write(np.asarray(first_frame.convert('RGB'))[:, :, ::-1].copy())
 
         for image in frames:
             video.write(np.asarray(image.convert('RGB'))[:, :, ::-1].copy())
         cv2.destroyAllWindows()
         video.release()
-        
+
 
 def get_fps(path):
         vidcap = cv2.VideoCapture(path)

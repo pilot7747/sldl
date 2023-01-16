@@ -835,23 +835,23 @@ class SwinIR(nn.Module):
         return flops
 
 
+@torch.no_grad()
 def swin_ir_inference(model, img, window_size=8, device='cpu'):
     img_lq = np.asarray(img).astype(np.float32) / 255.
     img_lq = np.transpose(img_lq if img_lq.shape[2] == 1 else img_lq[:, :, [2, 1, 0]], (2, 0, 1))
     img_lq = torch.from_numpy(img_lq).float().unsqueeze(0).to(device)
 
-    with torch.no_grad():
-        # pad input image to be a multiple of window_size
-        _, _, h_old, w_old = img_lq.size()
-        h_pad = (h_old // window_size + 1) * window_size - h_old
-        w_pad = (w_old // window_size + 1) * window_size - w_old
-        img_lq = torch.cat([img_lq, torch.flip(img_lq, [2])], 2)[:, :, :h_old + h_pad, :]
-        img_lq = torch.cat([img_lq, torch.flip(img_lq, [3])], 3)[:, :, :, :w_old + w_pad]
-        output = model(img_lq)
-        output = output[..., :h_old * 4, :w_old * 4]
+    # pad input image to be a multiple of window_size
+    _, _, h_old, w_old = img_lq.size()
+    h_pad = (h_old // window_size + 1) * window_size - h_old
+    w_pad = (w_old // window_size + 1) * window_size - w_old
+    img_lq = torch.cat([img_lq, torch.flip(img_lq, [2])], 2)[:, :, :h_old + h_pad, :]
+    img_lq = torch.cat([img_lq, torch.flip(img_lq, [3])], 3)[:, :, :, :w_old + w_pad]
+    output = model(img_lq)
+    output = output[..., :h_old * 4, :w_old * 4]
 
-        output = output.data.squeeze().float().cpu().clamp_(0, 1).numpy()
-        if output.ndim == 3:
-            output = np.transpose(output[[2, 1, 0], :, :], (1, 2, 0))  # CHW-RGB to HCW-BGR
-        output = (output * 255.0).round().astype(np.uint8)
+    output = output.data.squeeze().float().cpu().clamp_(0, 1).numpy()
+    if output.ndim == 3:
+        output = np.transpose(output[[2, 1, 0], :, :], (1, 2, 0))  # CHW-RGB to HCW-BGR
+    output = (output * 255.0).round().astype(np.uint8)
     return Image.fromarray(output)
