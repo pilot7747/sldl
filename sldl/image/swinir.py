@@ -838,6 +838,7 @@ class SwinIR(nn.Module):
 
 @torch.no_grad()
 def swin_ir_inference(model: SwinIR, img: Image.Image, window_size: int = 8, device: torch.device = torch.device('cpu'), precision: str = 'full') -> Image.Image:
+    model.eval()
     img_lq = np.asarray(img).astype(np.float32) / 255.
     img_lq = np.transpose(img_lq if img_lq.shape[2] == 1 else img_lq[:, :, [2, 1, 0]], (2, 0, 1))
     if precision == 'full':
