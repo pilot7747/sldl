@@ -13,7 +13,28 @@ from sldl._utils import get_video_frames, frames_to_video, get_fps
 
 
 class VideoSR(nn.Module):
-    def __init__(self, model_name='vrt', precision='full'):
+    r"""Video Super-Resolution
+
+    Takes an image and increases its resoulution by some factor. Currently supports
+    SwinIR, BSRGAN, and VRT models.
+
+    :param model_name: Name of the pre-trained model. Can be one of the `SwinIR-M`,
+        `SwinIR-L`, `BSRGAN`, `BSRGANx2`, and `vrt`. Default: `BSRGAN`.
+    :type model_name: str
+    :param precision:  Can be either `full` (uses fp32) and `half` (uses fp16).
+        Default: `full`.
+    :type precision: str
+
+    Example:
+
+    .. code-block:: python
+    
+        from sldl.video import VideoSR
+
+        sr = VideoSR('BSRGAN').cuda()
+        sr('your_video.mp4', 'upscaled_video.mp4')
+    """
+    def __init__(self, model_name='BSRGAN', precision='full'):
         super(VideoSR, self).__init__()
         self.model_name = model_name
         self.precision = precision
@@ -35,11 +56,11 @@ class VideoSR(nn.Module):
         return next(self.parameters()).device
     
     @staticmethod
-    def video_to_tensor(path):
+    def _video_to_tensor(path):
         frames = get_video_frames(path)
         return torch.stack([torch.from_numpy(np.asarray(img)[:, :, :3].transpose(2, 0, 1)) for img in frames]) / 255.
     
-    def test_clip(self, lq):
+    def _test_clip(self, lq):
         sf = 4
         window_size = [6, 8, 8]
         size_patch_testing = self.tile[1]
@@ -86,8 +107,8 @@ class VideoSR(nn.Module):
             return output
         
     @torch.no_grad()
-    def apply_vrt(self, path):
-        lq = VideoSR.video_to_tensor(path).to(self.device)[None, :, :, :, :]
+    def _apply_vrt(self, path):
+        lq = VideoSR._video_to_tensor(path).to(self.device)[None, :, :, :, :]
         if self.precision == 'half':
             lq = lq.half()
         num_frame_testing = self.tile[0]
@@ -105,7 +126,7 @@ class VideoSR(nn.Module):
 
         for d_idx in tqdm(d_idx_list):
             lq_clip = lq[:, d_idx:d_idx+num_frame_testing, ...]
-            out_clip = self.test_clip(lq_clip)
+            out_clip = self._test_clip(lq_clip)
             out_clip_mask = torch.ones((b, min(num_frame_testing, d), 1, 1, 1))
 
             if not_overlap_border:
@@ -131,16 +152,23 @@ class VideoSR(nn.Module):
             out_frames.append(Image.fromarray(cv2.cvtColor(img, cv2.COLOR_RGB2BGR)))
         return out_frames
         
-    def apply_imagesr(self, path, pre_resolution=None):
+    def _apply_imagesr(self, path, pre_resolution=None):
         frames = get_video_frames(path, pre_resolution)
         for frame in tqdm(frames):
             yield self.model(frame)
         # return [self.model(frame) for frame in tqdm(frames)]
     
     def __call__(self, path: str, dest: str, pre_resolution: Optional[Tuple[int, int]] = None) -> None:
+        """Upscales the image
+
+        :param path: Path to the source video file.
+        :type path: str
+        :param dest: Path where the upscaled version should be saved.
+        :type dest: str
+        """
         fps = get_fps(path)
         if self.model_name == 'vrt':
-            out_frames = self.apply_vrt(path)
+            out_frames = self._apply_vrt(path)
         elif self.model_name in ['SwinIR-M', 'SwinIR-L', 'BSRGAN', 'BSRGANx2']:
-            out_frames = self.apply_imagesr(path, pre_resolution)
+            out_frames = self._apply_imagesr(path, pre_resolution)
         frames_to_video(out_frames, dest, fps)

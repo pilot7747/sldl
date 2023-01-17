@@ -12,13 +12,25 @@ class ImageDenoising(nn.Module):
     Takes an image and removes the noise from it. Currently supports
     SwinIR only.
 
-    Args:
-        model_name (str): Name of the pre-trained model. Currently only `SwinIR`
-            is supported.
-        noise (int): Noise level that the model was trained on. Can be of of
-            `15`, `25`, `50`.
-        precision (str): Can be either `full` (uses fp32) and `half` (uses fp16).
-            Default: `full`.
+    :param model_name: Name of the pre-trained model. Now it can only be `SwinIR`.
+    :type model_name: str
+    :param noise: Noise level that the model was trained on. Can be of of
+        `15`, `25`, `50`.
+    :type noise: int
+    :param precision:  Can be either `full` (uses fp32) and `half` (uses fp16).
+        Default: `full`.
+    :type precision: str.
+
+    Example:
+
+    .. code-block:: python
+    
+        from PIL import Image
+        from sldl.image import ImageDenoising
+
+        denoiser = ImageDenoising('SwinIR')
+        img = Image.open('test.png')
+        denoised = denoiser(img)
     """
     def __init__(self, model_name: str = 'SwinIR', noise: int = 15, precision: str = 'full'):
         super(ImageDenoising, self).__init__()
