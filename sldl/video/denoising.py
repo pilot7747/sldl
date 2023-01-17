@@ -3,7 +3,7 @@ from tqdm.auto import tqdm
 
 
 from sldl.image import ImageDenoising
-from sldl.utils import get_video_frames, frames_to_video, get_fps
+from sldl._utils import get_video_frames, frames_to_video, get_fps
 
 
 class VideoDenoising(nn.Module):

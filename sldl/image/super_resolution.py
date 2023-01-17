@@ -5,10 +5,33 @@ from PIL import Image
 from .swinir import SwinIR, swin_ir_inference
 from .bsrgan import RRDBNet, bsrgan_inference
 
-from sldl.utils import get_checkpoint_path
+from sldl._utils import get_checkpoint_path
 
 
 class ImageSR(nn.Module):
+    r"""Image Super-Resolution
+
+    Takes an image and increases its resoulution by some factor. Currently supports
+    SwinIR and BSRGAN models.
+
+    :param model_name: Name of the pre-trained model. Can be one of the `SwinIR-M`,
+        `SwinIR-L`, `BSRGAN`, and `BSRGANx2`. Default: `SwinIR-M`.
+    :type model_name: str
+    :param precision:  Can be either `full` (uses fp32) and `half` (uses fp16).
+        Default: `full`.
+    :type precision: str
+
+    Example:
+
+    .. code-block:: python
+    
+        from PIL import Image
+        from sldl.image import ImageSR
+
+        sr = ImageSR('BSRGAN')
+        img = Image.open('test.png')
+        upscaled = sr(img)
+    """
     def __init__(self, model_name: str = 'SwinIR-M', precision: str = 'full'):
         super(ImageSR, self).__init__()
         self.model_name = model_name
@@ -40,7 +63,15 @@ class ImageSR(nn.Module):
     def device(self) -> torch.device:
         return next(self.parameters()).device
             
-    def __call__(self, img: Image) -> Image:
+    def __call__(self, img: Image.Image) -> Image.Image:
+        """Applies the model.
+
+        :param img: An input image.
+        :type img: :class:`PIL.Image.Image`
+        
+        :return: An upscaled version of the input image
+        :rtype: :class:`PIL.Image.Image`
+        """
         if self.model_name in ['SwinIR-M', 'SwinIR-L']:
             return swin_ir_inference(self.model, img, device=self.device, precision=self.precision)
         elif self.model_name in ['BSRGAN', 'BSRGANx2']:

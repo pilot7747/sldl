@@ -9,7 +9,7 @@ from typing import Optional, Tuple
 from .vrt import VRT
 
 from sldl.image import ImageSR
-from sldl.utils import get_video_frames, frames_to_video, get_fps
+from sldl._utils import get_video_frames, frames_to_video, get_fps
 
 
 class VideoSR(nn.Module):

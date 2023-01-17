@@ -109,7 +109,7 @@ class RRDBNet(nn.Module):
 
 
 @torch.no_grad()
-def bsrgan_inference(model: RRDBNet, img: Image, device: torch.device = torch.device('cpu'), precision: str = 'full') -> Image:
+def bsrgan_inference(model: RRDBNet, img: Image.Image, device: torch.device = torch.device('cpu'), precision: str = 'full') -> Image.Image:
     model.eval()
     img = torch.from_numpy(np.ascontiguousarray(np.asarray(img))).permute(2, 0, 1).float().div(255.).unsqueeze(0)
     img = img.to(device)
