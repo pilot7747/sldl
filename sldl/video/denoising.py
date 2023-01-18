@@ -24,24 +24,25 @@ class VideoDenoising(nn.Module):
     Example:
 
     .. code-block:: python
-    
+
         from sldl.video import VideoDenoising
 
         denoiser = VideoDenoising('BSRGAN').cuda()
         sr('your_video.mp4', 'denoised_video.mp4')
     """
-    def __init__(self, model_name='SwinIR', noise=15, precision: str = 'full'):
+
+    def __init__(self, model_name="SwinIR", noise=15, precision: str = "full"):
         super(VideoDenoising, self).__init__()
         self.model_name = model_name
         self.precision = precision
-        
-        if model_name == 'SwinIR':
+
+        if model_name == "SwinIR":
             self.model = ImageDenoising(model_name, noise=noise, precision=precision)
-            
+
     def _apply_swinir(self, path):
         frames = get_video_frames(path)
         return [self.model(frame) for frame in tqdm(frames)]
-        
+
     def __call__(self, path, dest):
         """Denoises the image
 
@@ -50,7 +51,7 @@ class VideoDenoising(nn.Module):
         :param dest: Path where the denoised version should be saved.
         :type dest: str
         """
-        if self.model_name == 'SwinIR':
+        if self.model_name == "SwinIR":
             out_frames = self._apply_swinir(path)
         fps = get_fps(path)
         frames_to_video(out_frames, dest, fps)

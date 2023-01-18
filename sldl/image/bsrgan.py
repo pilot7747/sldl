@@ -11,18 +11,20 @@ from PIL import Image
 from typing import Callable, List, Union
 
 
-def initialize_weights(net_l: Union[nn.Module, List[nn.Module]], scale: int = 1) -> None:
+def initialize_weights(
+    net_l: Union[nn.Module, List[nn.Module]], scale: int = 1
+) -> None:
     if not isinstance(net_l, list):
         net_l = [net_l]
     for net in net_l:
         for m in net.modules():
             if isinstance(m, nn.Conv2d):
-                init.kaiming_normal_(m.weight, a=0, mode='fan_in')
+                init.kaiming_normal_(m.weight, a=0, mode="fan_in")
                 m.weight.data *= scale  # for residual block
                 if m.bias is not None:
                     m.bias.data.zero_()
             elif isinstance(m, nn.Linear):
-                init.kaiming_normal_(m.weight, a=0, mode='fan_in')
+                init.kaiming_normal_(m.weight, a=0, mode="fan_in")
                 m.weight.data *= scale
                 if m.bias is not None:
                     m.bias.data.zero_()
@@ -50,7 +52,9 @@ class ResidualDenseBlock_5C(nn.Module):
         self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
         # initialization
-        initialize_weights([self.conv1, self.conv2, self.conv3, self.conv4, self.conv5], 0.1)
+        initialize_weights(
+            [self.conv1, self.conv2, self.conv3, self.conv4, self.conv5], 0.1
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x1 = self.lrelu(self.conv1(x))
@@ -62,7 +66,7 @@ class ResidualDenseBlock_5C(nn.Module):
 
 
 class RRDB(nn.Module):
-    '''Residual in Residual Dense Block'''
+    """Residual in Residual Dense Block"""
 
     def __init__(self, nf, gc: int = 32):
         super(RRDB, self).__init__()
@@ -78,7 +82,15 @@ class RRDB(nn.Module):
 
 
 class RRDBNet(nn.Module):
-    def __init__(self, in_nc: int = 3, out_nc: int = 3, nf: int = 64, nb: int = 23, gc: int = 32, sf: int = 4):
+    def __init__(
+        self,
+        in_nc: int = 3,
+        out_nc: int = 3,
+        nf: int = 64,
+        nb: int = 23,
+        gc: int = 32,
+        sf: int = 4,
+    ):
         super(RRDBNet, self).__init__()
         RRDB_block_f = functools.partial(RRDB, nf=nf, gc=gc)
         self.sf = sf
@@ -88,7 +100,7 @@ class RRDBNet(nn.Module):
         self.trunk_conv = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
         #### upsampling
         self.upconv1 = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
-        if self.sf==4:
+        if self.sf == 4:
             self.upconv2 = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
         self.HRconv = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
         self.conv_last = nn.Conv2d(nf, out_nc, 3, 1, 1, bias=True)
@@ -100,24 +112,39 @@ class RRDBNet(nn.Module):
         trunk = self.trunk_conv(self.RRDB_trunk(fea))
         fea = fea + trunk
 
-        fea = self.lrelu(self.upconv1(F.interpolate(fea, scale_factor=2, mode='nearest')))
-        if self.sf==4:
-            fea = self.lrelu(self.upconv2(F.interpolate(fea, scale_factor=2, mode='nearest')))
+        fea = self.lrelu(
+            self.upconv1(F.interpolate(fea, scale_factor=2, mode="nearest"))
+        )
+        if self.sf == 4:
+            fea = self.lrelu(
+                self.upconv2(F.interpolate(fea, scale_factor=2, mode="nearest"))
+            )
         out = self.conv_last(self.lrelu(self.HRconv(fea)))
 
         return out
 
 
 @torch.no_grad()
-def bsrgan_inference(model: RRDBNet, img: Image.Image, device: torch.device = torch.device('cpu'), precision: str = 'full') -> Image.Image:
+def bsrgan_inference(
+    model: RRDBNet,
+    img: Image.Image,
+    device: torch.device = torch.device("cpu"),
+    precision: str = "full",
+) -> Image.Image:
     model.eval()
-    img = torch.from_numpy(np.ascontiguousarray(np.asarray(img))).permute(2, 0, 1).float().div(255.).unsqueeze(0)
+    img = (
+        torch.from_numpy(np.ascontiguousarray(np.asarray(img)))
+        .permute(2, 0, 1)
+        .float()
+        .div(255.0)
+        .unsqueeze(0)
+    )
     img = img.to(device)
-    if precision == 'full':
+    if precision == "full":
         img = model(img)
     else:
         img = model(img.half())
     img = img.data.squeeze().float().clamp_(0, 1).cpu().numpy()
     if img.ndim == 3:
         img = np.transpose(img, (1, 2, 0))
-    return Image.fromarray(np.uint8((img*255.0).round()))
+    return Image.fromarray(np.uint8((img * 255.0).round()))

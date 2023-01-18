@@ -3,6 +3,6 @@ from .denoising import ImageDenoising
 
 
 __all__ = [
-    'ImageSR',
-    'ImageDenoising',
+    "ImageSR",
+    "ImageDenoising",
 ]
