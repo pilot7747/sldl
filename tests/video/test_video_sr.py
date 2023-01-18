@@ -3,7 +3,6 @@ import pytest
 import os
 from os.path import dirname, abspath, join
 from shutil import rmtree
-from PIL import Image
 from sldl.video import VideoSR
 from sldl._utils import get_data_dir
 

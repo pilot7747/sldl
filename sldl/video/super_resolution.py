@@ -198,8 +198,6 @@ class VideoSR(nn.Module):
             W[:, d_idx:d_idx + num_frame_testing, ...].add_(out_clip_mask)
         output = E.div_(W)
 
-        out_frames = []
-
         for i in range(output.shape[1]):
             # save image
             img = output[:, i, ...].data.squeeze().float().cpu().clamp_(0, 1).numpy()
