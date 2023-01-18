@@ -41,7 +41,8 @@ class VideoDenoising(nn.Module):
 
     def _apply_swinir(self, path):
         frames = get_video_frames(path)
-        return [self.model(frame) for frame in tqdm(frames)]
+        for frame in tqdm(frames):
+            yield self.model(frame)
 
     def __call__(self, path, dest):
         """Denoises the image

@@ -208,8 +208,7 @@ class VideoSR(nn.Module):
                     img[[2, 1, 0], :, :], (1, 2, 0)
                 )  # CHW-RGB to HCW-BGR
             img = (img * 255.0).round().astype(np.uint8)
-            out_frames.append(Image.fromarray(cv2.cvtColor(img, cv2.COLOR_RGB2BGR)))
-        return out_frames
+            yield Image.fromarray(cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
 
     def _apply_imagesr(self, path, pre_resolution=None):
         frames = get_video_frames(path, pre_resolution)
