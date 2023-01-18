@@ -5,6 +5,7 @@
 # This source code is licensed under the BSD license found in the
 # LICENSE file: https://github.com/JingyunLiang/VRT/blob/main/LICENSE
 
+# flake8: noqa
 
 import os
 import warnings

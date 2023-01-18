@@ -630,8 +630,7 @@ class RSTB(nn.Module):
         return (
             self.patch_embed(
                 self.conv(self.patch_unembed(self.residual_group(x, x_size), x_size))
-            )
-            + x
+            ) + x
         )
 
     def flops(self) -> float:
@@ -857,12 +856,8 @@ class SwinIR(nn.Module):
         self.upsampler = upsampler
         self.window_size = window_size
 
-        #####################################################################################################
-        ################################### 1, shallow feature extraction ###################################
         self.conv_first = nn.Conv2d(num_in_ch, embed_dim, 3, 1, 1)
 
-        #####################################################################################################
-        ################################### 2, deep feature extraction ######################################
         self.num_layers = len(depths)
         self.embed_dim = embed_dim
         self.ape = ape
@@ -920,7 +915,7 @@ class SwinIR(nn.Module):
                 drop=drop_rate,
                 attn_drop=attn_drop_rate,
                 drop_path=dpr[
-                    sum(depths[:i_layer]) : sum(depths[: i_layer + 1])
+                    sum(depths[:i_layer]):sum(depths[: i_layer + 1])
                 ],  # no impact on SR results
                 norm_layer=norm_layer,
                 downsample=None,
@@ -945,8 +940,6 @@ class SwinIR(nn.Module):
                 nn.Conv2d(embed_dim // 4, embed_dim, 3, 1, 1),
             )
 
-        #####################################################################################################
-        ################################ 3, high quality image reconstruction ################################
         if self.upsampler == "pixelshuffle":
             # for classical SR
             self.conv_before_upsample = nn.Sequential(

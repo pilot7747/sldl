@@ -9,7 +9,7 @@ from typing import Optional, Tuple
 from .vrt import VRT
 
 from sldl.image import ImageSR
-from sldl._utils import get_video_frames, frames_to_video, get_fps
+from sldl._utils import get_video_frames, frames_to_video, get_fps, get_checkpoint_path
 
 
 class VideoSR(nn.Module):
@@ -94,8 +94,7 @@ class VideoSR(nn.Module):
                     torch.from_numpy(np.asarray(img)[:, :, :3].transpose(2, 0, 1))
                     for img in frames
                 ]
-            )
-            / 255.0
+            ) / 255.0
         )
 
     def _test_clip(self, lq):
@@ -128,8 +127,8 @@ class VideoSR(nn.Module):
                 for w_idx in w_idx_list:
                     in_patch = lq[
                         ...,
-                        h_idx : h_idx + size_patch_testing,
-                        w_idx : w_idx + size_patch_testing,
+                        h_idx:h_idx + size_patch_testing,
+                        w_idx:w_idx + size_patch_testing,
                     ]
                     out_patch = self.model(in_patch).detach().cpu()
 
@@ -137,11 +136,11 @@ class VideoSR(nn.Module):
 
                     if not_overlap_border:
                         if h_idx < h_idx_list[-1]:
-                            out_patch[..., -overlap_size // 2 :, :] *= 0
-                            out_patch_mask[..., -overlap_size // 2 :, :] *= 0
+                            out_patch[..., -overlap_size // 2:, :] *= 0
+                            out_patch_mask[..., -overlap_size // 2:, :] *= 0
                         if w_idx < w_idx_list[-1]:
-                            out_patch[..., :, -overlap_size // 2 :] *= 0
-                            out_patch_mask[..., :, -overlap_size // 2 :] *= 0
+                            out_patch[..., :, -overlap_size // 2:] *= 0
+                            out_patch_mask[..., :, -overlap_size // 2:] *= 0
                         if h_idx > h_idx_list[0]:
                             out_patch[..., : overlap_size // 2, :] *= 0
                             out_patch_mask[..., : overlap_size // 2, :] *= 0
@@ -151,13 +150,13 @@ class VideoSR(nn.Module):
 
                     E[
                         ...,
-                        h_idx * sf : (h_idx + size_patch_testing) * sf,
-                        w_idx * sf : (w_idx + size_patch_testing) * sf,
+                        h_idx * sf:(h_idx + size_patch_testing) * sf,
+                        w_idx * sf:(w_idx + size_patch_testing) * sf,
                     ].add_(out_patch)
                     W[
                         ...,
-                        h_idx * sf : (h_idx + size_patch_testing) * sf,
-                        w_idx * sf : (w_idx + size_patch_testing) * sf,
+                        h_idx * sf:(h_idx + size_patch_testing) * sf,
+                        w_idx * sf:(w_idx + size_patch_testing) * sf,
                     ].add_(out_patch_mask)
             output = E.div_(W)
             return output
@@ -183,20 +182,20 @@ class VideoSR(nn.Module):
         W = torch.zeros(b, d, 1, 1, 1)
 
         for d_idx in tqdm(d_idx_list):
-            lq_clip = lq[:, d_idx : d_idx + num_frame_testing, ...]
+            lq_clip = lq[:, d_idx:d_idx + num_frame_testing, ...]
             out_clip = self._test_clip(lq_clip)
             out_clip_mask = torch.ones((b, min(num_frame_testing, d), 1, 1, 1))
 
             if not_overlap_border:
                 if d_idx < d_idx_list[-1]:
-                    out_clip[:, -num_frame_overlapping // 2 :, ...] *= 0
-                    out_clip_mask[:, -num_frame_overlapping // 2 :, ...] *= 0
+                    out_clip[:, -num_frame_overlapping // 2:, ...] *= 0
+                    out_clip_mask[:, -num_frame_overlapping // 2:, ...] *= 0
                 if d_idx > d_idx_list[0]:
                     out_clip[:, : num_frame_overlapping // 2, ...] *= 0
                     out_clip_mask[:, : num_frame_overlapping // 2, ...] *= 0
 
-            E[:, d_idx : d_idx + num_frame_testing, ...].add_(out_clip)
-            W[:, d_idx : d_idx + num_frame_testing, ...].add_(out_clip_mask)
+            E[:, d_idx:d_idx + num_frame_testing, ...].add_(out_clip)
+            W[:, d_idx:d_idx + num_frame_testing, ...].add_(out_clip_mask)
         output = E.div_(W)
 
         out_frames = []

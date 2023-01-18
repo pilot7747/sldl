@@ -1,6 +1,5 @@
-import os.path
-from os import environ, makedirs, listdir, rename
-from os.path import exists, expanduser, join, splitext, basename
+from os import environ, makedirs
+from os.path import exists, expanduser, join
 from typing import Optional, AnyStr, cast
 from urllib.request import urlretrieve
 
