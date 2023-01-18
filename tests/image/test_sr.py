@@ -1,10 +1,12 @@
 import pytest
 
 from os.path import dirname, abspath, join
+from shutil import rmtree
 import numpy as np
 from numpy.testing import assert_allclose
 from PIL import Image
 from sldl.image import ImageSR
+from sldl._utils import get_data_dir
 
 
 @pytest.mark.parametrize('model_name', ['SwinIR-M', 'SwinIR-L', 'BSRGAN', 'BSRGANx2'])
@@ -18,3 +20,4 @@ def test_sr(model_name):
     gt = Image.open(gt_path)
     if model_name not in ['SwinIR-M', 'SwinIR-L']:
         assert_allclose(np.asarray(upscaled) / 255., np.asarray(gt) / 255.)
+    rmtree(get_data_dir())
