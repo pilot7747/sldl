@@ -65,8 +65,6 @@ sr('your_video.mp4', 'upscaled_video.mp4')
 
 ## Plans
 
-* Make this a usable Python package
-* Prettify the code, write the docs
 * Add image deblurring, face generation, machine translation, etc
 * Add more models like RealESRGAN
 * Make inference optimizations like `torch.compile` and TensorRT
