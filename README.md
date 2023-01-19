@@ -12,6 +12,13 @@ img = Image.open('test.png')
 upscaled = sr(img)
 ```
 
+## Installation
+
+The project is available on PyPI, just run
+```bash
+pip install sldl
+```
+
 ## Overview
 
 SLDL is written in PyTorch and tries not to change the original author's implementation and, at the same time, provide the fastest inference and the most convinient interface. Note that SLDL doesn't provide any interface to train or fine-tune the models.
