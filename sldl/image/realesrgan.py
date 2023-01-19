@@ -1,8 +1,3 @@
-import torch
-from torch import nn
-import numpy as np
-
-
 def patch_realesrgan_param_names(state_dict):
     state_dict = state_dict['params_ema']
     keys = list(state_dict.keys())
