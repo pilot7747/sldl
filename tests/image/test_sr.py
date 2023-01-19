@@ -7,7 +7,7 @@ from sldl.image import ImageSR
 from sldl._utils import get_data_dir
 
 
-@pytest.mark.parametrize('model_name', ['SwinIR-M', 'SwinIR-L', 'BSRGAN', 'BSRGANx2'])
+@pytest.mark.parametrize('model_name', ['SwinIR-M', 'SwinIR-L', 'BSRGAN', 'BSRGANx2', 'RealESRGAN'])
 def test_sr(model_name):
     img_path = join(dirname(dirname(abspath(__file__))), 'test_files', 'image.jpg')
     sr = ImageSR(model_name)
