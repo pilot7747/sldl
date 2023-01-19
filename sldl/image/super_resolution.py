@@ -13,10 +13,10 @@ class ImageSR(nn.Module):
     r"""Image Super-Resolution
 
     Takes an image and increases its resoulution by some factor. Currently supports
-    SwinIR and BSRGAN models.
+    SwinIR, BSRGAN and RealESRGAN models.
 
     :param model_name: Name of the pre-trained model. Can be one of the `SwinIR-M`,
-        `SwinIR-L`, `BSRGAN`, and `BSRGANx2`. Default: `SwinIR-M`.
+        `SwinIR-L`, `BSRGAN`, `BSRGANx2`, and `RealESRGAN`. Default: `SwinIR-M`.
     :type model_name: str
     :param precision:  Can be either `full` (uses fp32) and `half` (uses fp16).
         Default: `full`.
@@ -107,6 +107,8 @@ class ImageSR(nn.Module):
                 "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth"
             )
             self.model.load_state_dict(patch_realesrgan_param_names(torch.load(path)), strict=True)
+        else:
+            raise ValueError("")
 
         if precision == "half":
             self.model = self.model.half()

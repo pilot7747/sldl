@@ -19,7 +19,7 @@ class VideoSR(nn.Module):
     SwinIR, BSRGAN, and VRT models.
 
     :param model_name: Name of the pre-trained model. Can be one of the `SwinIR-M`,
-        `SwinIR-L`, `BSRGAN`, `BSRGANx2`, and `vrt`. Default: `BSRGAN`.
+        `SwinIR-L`, `BSRGAN`, `BSRGANx2`, `RealESRGAN`, and `vrt`. Default: `BSRGAN`.
     :type model_name: str
     :param precision:  Can be either `full` (uses fp32) and `half` (uses fp16).
         Default: `full`.
@@ -78,7 +78,7 @@ class VideoSR(nn.Module):
             self.tile = [40, 128, 128]
             if precision == "half":
                 self.model = self.model.half()
-        elif model_name in ["SwinIR-M", "SwinIR-L", "BSRGAN", "BSRGANx2"]:
+        elif model_name in ["SwinIR-M", "SwinIR-L", "BSRGAN", "BSRGANx2", "RealESRGAN"]:
             self.model = ImageSR(model_name, precision=precision)
 
     @property
@@ -227,6 +227,6 @@ class VideoSR(nn.Module):
         fps = get_fps(path)
         if self.model_name == "vrt":
             out_frames = self._apply_vrt(path)
-        elif self.model_name in ["SwinIR-M", "SwinIR-L", "BSRGAN", "BSRGANx2"]:
+        elif self.model_name in ["SwinIR-M", "SwinIR-L", "BSRGAN", "BSRGANx2", "RealESRGAN"]:
             out_frames = self._apply_imagesr(path, pre_resolution)
         frames_to_video(out_frames, dest, fps)

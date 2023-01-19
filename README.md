@@ -33,12 +33,12 @@ Currently two types of tasks are supported.
 ### Images
 
 * Denoising: SwinIR
-* Super-resolution: BSRGAN, SwinIR
+* Super-resolution: BSRGAN, RealESRGAN, SwinIR
 
 ### Videos
 
 * Denoising: SwinIR
-* Super-resolution: BSRGAN, SwinIR, VRT
+* Super-resolution: BSRGAN, RealESRGAN, SwinIR, VRT
 
 ## Usage
 
