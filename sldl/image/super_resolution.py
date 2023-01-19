@@ -4,6 +4,7 @@ from PIL import Image
 
 from .swinir import SwinIR, swin_ir_inference
 from .bsrgan import RRDBNet, bsrgan_inference
+from .realesrgan import patch_realesrgan_param_names
 
 from sldl._utils import get_checkpoint_path
 
@@ -93,6 +94,19 @@ class ImageSR(nn.Module):
                 f"https://github.com/cszn/KAIR/releases/download/v1.0/{model_name}.pth"
             )
             self.model.load_state_dict(torch.load(path), strict=True)
+        elif model_name == "RealESRGAN":
+            self.model = RRDBNet(
+                in_nc=3,
+                out_nc=3,
+                nf=64,
+                nb=23,
+                gc=32,
+                sf=4
+            )
+            path = get_checkpoint_path(
+                "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth"
+            )
+            self.model.load_state_dict(patch_realesrgan_param_names(torch.load(path)), strict=True)
 
         if precision == "half":
             self.model = self.model.half()
@@ -114,7 +128,7 @@ class ImageSR(nn.Module):
             return swin_ir_inference(
                 self.model, img, device=self.device, precision=self.precision
             )
-        elif self.model_name in ["BSRGAN", "BSRGANx2"]:
+        elif self.model_name in ["BSRGAN", "BSRGANx2", "RealESRGAN"]:
             return bsrgan_inference(
                 self.model, img, device=self.device, precision=self.precision
             )
