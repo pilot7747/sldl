@@ -5,6 +5,7 @@ from torch import nn
 from PIL import Image
 from tqdm.auto import tqdm
 from typing import Optional, Tuple
+import logging
 
 from .vrt import VRT
 
@@ -208,11 +209,17 @@ class VideoSR(nn.Module):
             img = (img * 255.0).round().astype(np.uint8)
             yield Image.fromarray(cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
 
-    def _apply_imagesr(self, path, pre_resolution=None):
+    def _apply_imagesr(self, path, pre_resolution=None, device=None):
         frames = get_video_frames(path, pre_resolution)
         for frame in tqdm(frames):
-            yield self.model(frame)
+            yield self.model(frame, device=device)
         # return [self.model(frame) for frame in tqdm(frames)]
+
+    def _jit_optimize_image_model(self):
+        try:
+            self.model.model = torch.jit.optimize_for_inference(torch.jit.script(self.model.model.eval()))
+        except Exception:
+            logging.warning('Skipping JIT optimization')
 
     def __call__(
         self, path: str, dest: str, pre_resolution: Optional[Tuple[int, int]] = None
@@ -228,5 +235,7 @@ class VideoSR(nn.Module):
         if self.model_name == "vrt":
             out_frames = self._apply_vrt(path)
         elif self.model_name in ["SwinIR-M", "SwinIR-L", "BSRGAN", "BSRGANx2", "RealESRGAN"]:
-            out_frames = self._apply_imagesr(path, pre_resolution)
+            device = self.device
+            self._jit_optimize_image_model()
+            out_frames = self._apply_imagesr(path, pre_resolution, device=device)
         frames_to_video(out_frames, dest, fps)

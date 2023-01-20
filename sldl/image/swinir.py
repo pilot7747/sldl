@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Tuple
 
 
 class Mlp(nn.Module):
@@ -279,7 +279,7 @@ class SwinTransformerBlock(nn.Module):
 
         self.register_buffer("attn_mask", attn_mask)
 
-    def calculate_mask(self, x_size: torch.Size) -> torch.Tensor:
+    def calculate_mask(self, x_size: Tuple[int, int]) -> torch.Tensor:
         # calculate attention mask for SW-MSA
         H, W = x_size
         img_mask = torch.zeros((1, H, W, 1))  # 1 H W 1
@@ -310,7 +310,7 @@ class SwinTransformerBlock(nn.Module):
 
         return attn_mask
 
-    def forward(self, x: torch.Tensor, x_size: torch.Size) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, x_size: Tuple[int, int]) -> torch.Tensor:
         H, W = x_size
         B, L, C = x.shape
         # assert L == H * W, "input feature has wrong size"
@@ -338,11 +338,11 @@ class SwinTransformerBlock(nn.Module):
         # W-MSA/SW-MSA (to be compatible for testing on images whose shapes are the multiple of window size
         if self.input_resolution == x_size:
             attn_windows = self.attn(
-                x_windows, mask=self.attn_mask
+                x_windows, mask=self.attn_mask.to(dtype=x.dtype)
             )  # nW*B, window_size*window_size, C
         else:
             attn_windows = self.attn(
-                x_windows, mask=self.calculate_mask(x_size).to(x.device)
+                x_windows, mask=self.calculate_mask(x_size).to(x.device, dtype=x.dtype)
             )
 
         # merge windows
@@ -512,7 +512,7 @@ class BasicLayer(nn.Module):
         else:
             self.downsample = None
 
-    def forward(self, x: torch.Tensor, x_size: torch.Size) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, x_size: Tuple[int, int]) -> torch.Tensor:
         for blk in self.blocks:
             if self.use_checkpoint:
                 x = checkpoint.checkpoint(blk, x, x_size)
@@ -626,7 +626,7 @@ class RSTB(nn.Module):
             norm_layer=None,
         )
 
-    def forward(self, x: torch.Tensor, x_size: torch.Size) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, x_size: Tuple[int, int]) -> torch.Tensor:
         return (
             self.patch_embed(
                 self.conv(self.patch_unembed(self.residual_group(x, x_size), x_size))
@@ -729,7 +729,7 @@ class PatchUnEmbed(nn.Module):
         self.in_chans = in_chans
         self.embed_dim = embed_dim
 
-    def forward(self, x: torch.Tensor, x_size: torch.Size) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, x_size: Tuple[int, int]) -> torch.Tensor:
         B, HW, C = x.shape
         x = x.transpose(1, 2).view(B, self.embed_dim, x_size[0], x_size[1])  # B Ph*Pw C
         return x
@@ -1087,7 +1087,6 @@ def swin_ir_inference(
         img_lq = torch.from_numpy(img_lq).float().unsqueeze(0).to(device)
     else:
         img_lq = torch.from_numpy(img_lq).half().unsqueeze(0).to(device)
-
     # pad input image to be a multiple of window_size
     _, _, h_old, w_old = img_lq.size()
     h_pad = (h_old // window_size + 1) * window_size - h_old

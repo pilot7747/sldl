@@ -7,7 +7,7 @@ from sldl.video import VideoSR
 from sldl._utils import get_data_dir
 
 
-@pytest.mark.parametrize('model_name', ['vrt', 'BSRGAN'])
+@pytest.mark.parametrize('model_name', ['vrt', 'BSRGANx2'])
 def test_video_sr(model_name):
     video_path = join(dirname(dirname(abspath(__file__))), 'test_files', 'video.mp4')
     sr = VideoSR(model_name)
