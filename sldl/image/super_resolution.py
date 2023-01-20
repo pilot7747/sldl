@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from PIL import Image
+from typing import Optional
 
 from .swinir import SwinIR, swin_ir_inference
 from .bsrgan import RRDBNet, bsrgan_inference
@@ -108,7 +109,7 @@ class ImageSR(nn.Module):
             )
             self.model.load_state_dict(patch_realesrgan_param_names(torch.load(path)), strict=True)
         else:
-            raise ValueError("")
+            raise ValueError("Unknown model name")
 
         if precision == "half":
             self.model = self.model.half()
@@ -117,7 +118,7 @@ class ImageSR(nn.Module):
     def device(self) -> torch.device:
         return next(self.parameters()).device
 
-    def __call__(self, img: Image.Image) -> Image.Image:
+    def __call__(self, img: Image.Image, device: Optional[torch.device] = None) -> Image.Image:
         """Applies the model.
 
         :param img: An input image.
@@ -126,11 +127,12 @@ class ImageSR(nn.Module):
         :return: An upscaled version of the input image
         :rtype: :class:`PIL.Image.Image`
         """
+        device = device if device is not None else self.device
         if self.model_name in ["SwinIR-M", "SwinIR-L"]:
             return swin_ir_inference(
-                self.model, img, device=self.device, precision=self.precision
+                self.model, img, device=device, precision=self.precision
             )
         elif self.model_name in ["BSRGAN", "BSRGANx2", "RealESRGAN"]:
             return bsrgan_inference(
-                self.model, img, device=self.device, precision=self.precision
+                self.model, img, device=device, precision=self.precision
             )
