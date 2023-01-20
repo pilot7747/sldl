@@ -66,7 +66,6 @@ sr('your_video.mp4', 'upscaled_video.mp4')
 ## Plans
 
 * Add image deblurring, face generation, machine translation, etc
-* Add more models like RealESRGAN
 * Make inference optimizations like `torch.compile` and TensorRT
 * CLI tool and Docker image
 * Ready-to-go REST API deployment
