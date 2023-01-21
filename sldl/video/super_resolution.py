@@ -82,6 +82,8 @@ class VideoSR(nn.Module):
         elif model_name in ["SwinIR-M", "SwinIR-L", "BSRGAN", "BSRGANx2", "RealESRGAN"]:
             self.model = ImageSR(model_name, precision=precision)
 
+        self._device = None
+
     @property
     def device(self):
         return next(self.parameters()).device
@@ -219,12 +221,12 @@ class VideoSR(nn.Module):
         try:
             self.model.model = torch.jit.optimize_for_inference(torch.jit.script(self.model.model.eval()))
         except Exception:
-            logging.warning('Skipping JIT optimization')
+            logging.warning("Skipping JIT optimization")
 
     def __call__(
         self, path: str, dest: str, pre_resolution: Optional[Tuple[int, int]] = None
     ) -> None:
-        """Upscales the image
+        """Upscales the video
 
         :param path: Path to the source video file.
         :type path: str
@@ -235,7 +237,8 @@ class VideoSR(nn.Module):
         if self.model_name == "vrt":
             out_frames = self._apply_vrt(path)
         elif self.model_name in ["SwinIR-M", "SwinIR-L", "BSRGAN", "BSRGANx2", "RealESRGAN"]:
-            device = self.device
+            device = self._device if self._device is not None else self.device
+            self._device = device
             self._jit_optimize_image_model()
             out_frames = self._apply_imagesr(path, pre_resolution, device=device)
         frames_to_video(out_frames, dest, fps)
