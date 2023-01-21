@@ -92,6 +92,10 @@ class RRDBNet(nn.Module):
         sf: int = 4,
     ):
         super(RRDBNet, self).__init__()
+
+        # this is a weird trick to get torch.jit work with BSRGANx2:
+        self.upscale4x = None if sf != 4 else True
+
         RRDB_block_f = functools.partial(RRDB, nf=nf, gc=gc)
         self.sf = sf
 
@@ -115,7 +119,7 @@ class RRDBNet(nn.Module):
         fea = self.lrelu(
             self.upconv1(F.interpolate(fea, scale_factor=2., mode="nearest"))
         )
-        if self.sf == 4:
+        if self.upscale4x is not None:
             fea = self.lrelu(
                 self.upconv2(F.interpolate(fea, scale_factor=2., mode="nearest"))
             )

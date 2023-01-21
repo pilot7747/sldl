@@ -39,6 +39,7 @@ Currently two types of tasks are supported.
 
 * Denoising: SwinIR
 * Super-resolution: BSRGAN, RealESRGAN, SwinIR, VRT
+* Interpolation: IFRNet
 
 ## Usage
 
