@@ -16,7 +16,7 @@ class VideoInterpolation(nn.Module):
     an GoPro datasets and only x2 FPS increasing.
 
     :param model_name: Name of the pre-trained model. Can be one of the `IFRNet-Vimeo`
-    and `IFRNet-GoPro`. Default: `IFRNet-Vimeo`.
+        and `IFRNet-GoPro`. Default: `IFRNet-Vimeo`.
     :type model_name: str
 
     Example:
