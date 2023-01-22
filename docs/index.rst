@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Single-Line Deep Learning Documentation
-================================
+=======================================
 
 Most of the practicle tasks that require the usage of deep learning models can be simplified to 
 "just do the thing", e.g., "just upscale the image". On the other hand, official repositories of the state-of-the-art methods 
@@ -23,6 +23,50 @@ You can install SLDL by running the following command:
 .. code-block:: bash
 
    pip install sldl
+
+
+Supported Models
+================
+
+.. list-table:: Image Super-Resolution
+   :widths: 1 1 1 1 1 1
+   :header-rows: 1
+
+   * - 
+     - `SwinIR-M <https://github.com/JingyunLiang/SwinIR>`_
+     - `SwinIR-L <https://github.com/JingyunLiang/SwinIR>`_
+     - `BSRGAN <https://github.com/cszn/BSRGAN>`_
+     - `BSRGANx2 <https://github.com/cszn/BSRGAN>`_
+     - `RealESRGAN <https://github.com/xinntao/Real-ESRGAN>`_
+   * - Upscale factor
+     - 4
+     - 4
+     - 4
+     - 2
+     - 4
+
+.. list-table:: Video Super-Resolution
+   :widths: 1 1 1 1 1 1 1
+   :header-rows: 1
+
+   * - 
+     - `SwinIR-M <https://github.com/JingyunLiang/SwinIR>`_
+     - `SwinIR-L <https://github.com/JingyunLiang/SwinIR>`_
+     - `BSRGAN <https://github.com/cszn/BSRGAN>`_
+     - `BSRGANx2 <https://github.com/cszn/BSRGAN>`_
+     - `RealESRGAN <https://github.com/xinntao/Real-ESRGAN>`_
+     - `VRT <https://github.com/JingyunLiang/VRT>`_
+   * - Upscale factor
+     - 4
+     - 4
+     - 4
+     - 2
+     - 4
+     - 4
+
+* Image Denoising: `SwinIR <https://github.com/JingyunLiang/SwinIR>`_
+* Video Denoising: `SwinIR <https://github.com/JingyunLiang/SwinIR>`_
+* Video Interpolation `IFRNet <https://github.com/ltkong218/IFRNet>`_
 
 Quick Start
 ===========
